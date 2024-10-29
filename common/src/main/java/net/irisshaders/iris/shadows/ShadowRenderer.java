@@ -154,7 +154,7 @@ public class ShadowRenderer {
 		configureSamplingSettings(shadowDirectives);
 	}
 
-	public static PoseStack createShadowModelView(float sunPathRotation, float intervalSize) {
+	public static PoseStack createShadowModelView(float sunPathRotation, float intervalSize, float nearPlane, float farPlane) {
 		// Determine the camera position
 		Vector3d cameraPos = CameraUniforms.getUnshiftedCameraPosition();
 
@@ -164,7 +164,7 @@ public class ShadowRenderer {
 
 		// Set up our modelview matrix stack
 		PoseStack modelView = new PoseStack();
-		ShadowMatrices.createModelViewMatrix(modelView, getShadowAngle(), intervalSize, sunPathRotation, cameraX, cameraY, cameraZ);
+		ShadowMatrices.createModelViewMatrix(modelView, getShadowAngle(), intervalSize, sunPathRotation, cameraX, cameraY, cameraZ, nearPlane, farPlane);
 
 		return modelView;
 	}
@@ -384,7 +384,7 @@ public class ShadowRenderer {
 		setupShadowViewport();
 
 		// Create our camera
-		PoseStack modelView = createShadowModelView(this.sunPathRotation, this.intervalSize);
+		PoseStack modelView = createShadowModelView(this.sunPathRotation, this.intervalSize, nearPlane, farPlane);
 		MODELVIEW = new Matrix4f(modelView.last().pose());
 
 		// Set up our orthographic projection matrix and load it into RenderSystem
@@ -393,7 +393,7 @@ public class ShadowRenderer {
 			// If FOV is not null, the pack wants a perspective based projection matrix. (This is to support legacy packs)
 			shadowProjection = ShadowMatrices.createPerspectiveMatrix(this.fov);
 		} else {
-			shadowProjection = ShadowMatrices.createOrthoMatrix(halfPlaneLength, nearPlane < 0 ? -DHCompat.getRenderDistance() : nearPlane, farPlane < 0 ? DHCompat.getRenderDistance() : farPlane);
+			shadowProjection = ShadowMatrices.createOrthoMatrix(halfPlaneLength, nearPlane < 0 ? -DHCompat.getRenderDistance() * 16 : nearPlane, farPlane < 0 ? DHCompat.getRenderDistance() * 16 : farPlane);
 		}
 
 		IrisRenderSystem.setShadowProjection(shadowProjection);
@@ -703,6 +703,7 @@ public class ShadowRenderer {
 			messages.add("[" + Iris.MODNAME + "] Shadow Maps: " + debugStringOverall);
 			messages.add("[" + Iris.MODNAME + "] Shadow Distance Terrain: " + terrainFrustumHolder.getDistanceInfo() + " Entity: " + entityFrustumHolder.getDistanceInfo());
 			messages.add("[" + Iris.MODNAME + "] Shadow Culling Terrain: " + terrainFrustumHolder.getCullingInfo() + " Entity: " + entityFrustumHolder.getCullingInfo());
+			messages.add("[" + Iris.MODNAME + "] Shadow Projection: " + getProjectionInfo());
 			messages.add("[" + Iris.MODNAME + "] Shadow Terrain: " + debugStringTerrain
 				+ (shouldRenderTerrain ? "" : " (no terrain) ") + (shouldRenderTranslucent ? "" : "(no translucent)"));
 			messages.add("[" + Iris.MODNAME + "] Shadow Entities: " + getEntitiesDebugString());
@@ -716,6 +717,10 @@ public class ShadowRenderer {
 			messages.add("[" + Iris.MODNAME + "] E: " + renderedShadowEntities);
 			messages.add("[" + Iris.MODNAME + "] BE: " + renderedShadowBlockEntities);
 		}
+	}
+
+	private String getProjectionInfo() {
+		return "Near: " + nearPlane + " Far: " + farPlane + " distance " + halfPlaneLength;
 	}
 
 	private String getEntitiesDebugString() {
