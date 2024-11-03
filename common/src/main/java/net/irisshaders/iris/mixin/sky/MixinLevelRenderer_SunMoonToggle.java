@@ -1,14 +1,18 @@
 package net.irisshaders.iris.mixin.sky;
 
+import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.pipeline.WorldRenderingPipeline;
+import net.minecraft.client.OptionInstance;
+import net.minecraft.client.ParticleStatus;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.DimensionSpecialEffects;
 import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.world.level.LevelHeightAccessor;
 import org.joml.Matrix4f;
@@ -33,6 +37,19 @@ public class MixinLevelRenderer_SunMoonToggle {
 		} else {
 			meshData.close();
 		}
+	}
+
+	@WrapWithCondition(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;renderSnowAndRain(Lnet/minecraft/client/renderer/LightTexture;FDDD)V"))
+	private boolean iris$disableWeather(LevelRenderer instance, LightTexture lightTexture, float f, double d, double e, double g) {
+		return Iris.getPipelineManager().getPipeline().map(WorldRenderingPipeline::shouldRenderWeather).orElse(true);
+	}
+
+	@WrapOperation(method = "tickRain", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/OptionInstance;get()Ljava/lang/Object;", ordinal = 1))
+	private Object disableRainParticles(OptionInstance<?> instance, Operation<ParticleStatus> original) {
+		if (!Iris.getPipelineManager().getPipeline().map(WorldRenderingPipeline::shouldRenderWeatherParticles).orElse(true)) {
+			return ParticleStatus.MINIMAL;
+		}
+		return original.call(instance);
 	}
 
 	@WrapOperation(method = "renderSky",
