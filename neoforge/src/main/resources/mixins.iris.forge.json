@@ -9,6 +9,7 @@
     "MixinShaderInstance",
     "MixinRenderFlame",
     "MixinRenderMekasuit",
+    "MixinRenderSPS",
     "MixinShadowRenderer",
     "MixinVBOIE"
   ],

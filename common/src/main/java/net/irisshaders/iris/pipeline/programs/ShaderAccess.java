@@ -63,4 +63,14 @@ public class ShaderAccess {
 
 		return GameRenderer.getRendertypeEntityCutoutShader();
 	}
+
+	public static ShaderInstance getSPSShader() {
+		WorldRenderingPipeline pipeline = Iris.getPipelineManager().getPipelineNullable();
+
+		if (pipeline instanceof ShaderRenderingPipeline) {
+			return ((ShaderRenderingPipeline) pipeline).getShaderMap().getShader(ShadowRenderingState.areShadowsCurrentlyBeingRendered() ? ShaderKey.SHADOW_LIGHTNING : ShaderKey.SPS);
+		}
+
+		return GameRenderer.getRendertypeEntityCutoutShader();
+	}
 }
